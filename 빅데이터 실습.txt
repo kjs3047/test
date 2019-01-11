@@ -1,3 +1,4 @@
+master
 https://sites.google.com/site/medialoghadoop/01-hadub-gicho/01-hadub-salpyeobogi
 
 # 호스트명 변경 - NameNode가 실행될 host명을 master로 변경
