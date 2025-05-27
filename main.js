@@ -27,6 +27,11 @@ const CUSHION_THICKNESS = 0.2;
 const CUSHION_HEIGHT = 0.3;
 const BALL_RADIUS = 0.15;
 
+// Physics constants
+const FRICTION_FACTOR = 0.5; // Affects how quickly balls slow down (percentage per second)
+const RESTITUTION = 0.8;   // Bounciness of collisions
+const MIN_SPEED_THRESHOLD = 0.05; // Speed below which balls are considered stopped
+
 // Create Table Surface
 const tableSurfaceGeometry = new THREE.BoxGeometry(TABLE_WIDTH, TABLE_HEIGHT, TABLE_LENGTH);
 const tableSurfaceMaterial = new THREE.MeshStandardMaterial({ color: 0x008000 }); // Green
@@ -102,11 +107,6 @@ const POWER_SCALE_FACTOR = 0.03; // Scales mouse drag to power
 const CUE_OFFSET_DISTANCE = 0.5; // How far back cue is initially from ball
 const CUE_BALL_STOPPED_THRESHOLD = MIN_SPEED_THRESHOLD * MIN_SPEED_THRESHOLD;
 
-
-// Physics constants
-const FRICTION_FACTOR = 0.5; // Affects how quickly balls slow down (percentage per second)
-const RESTITUTION = 0.8;   // Bounciness of collisions
-const MIN_SPEED_THRESHOLD = 0.05; // Speed below which balls are considered stopped
 
 for (let i = 0; i < ballPositions.length; i++) {
     const ball = new THREE.Mesh(ballGeometry, ballMaterials[i]);
