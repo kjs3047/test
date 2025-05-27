@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Translator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Real-time Translator</h1>
+        <div class="input-section">
+            <label for="input-lang">Input Language:</label>
+            <select id="input-lang"></select>
+            <textarea id="input-text" placeholder="Enter text to translate..."></textarea>
+            <button id="record-voice-btn">Record Voice</button>
+        </div>
+        <div class="output-section">
+            <label for="output-lang">Output Language:</label>
+            <select id="output-lang"></select>
+            <textarea id="output-text" readonly placeholder="Translation will appear here..."></textarea>
+            <button id="play-voice-btn">Play Translation</button>
+        </div>
+        <button id="translate-btn">Translate</button>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

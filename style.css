@@ -1,0 +1,111 @@
+/* Basic styling will be added in a later step. */
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.container {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    max-width: 700px;
+    width: 100%;
+    margin: 20px;
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.input-section, .output-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.input-section label, .output-section label {
+    display: block;
+    margin-bottom: 5px;
+    color: #555;
+    font-weight: bold;
+}
+
+textarea, select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Ensures padding doesn't add to width */
+    font-family: inherit; /* Consistent font */
+}
+
+textarea {
+    min-height: 100px;
+    resize: vertical; /* Allow vertical resizing */
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-right: 5px; /* Spacing between buttons */
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+button:active {
+    background-color: #004085;
+}
+
+button#translate-btn {
+    display: block; /* Make it a block to take full width */
+    width: 100%;
+    margin-top: 10px; /* Add some space above it */
+    background-color: #28a745; /* Different color for primary action */
+}
+
+button#translate-btn:hover {
+    background-color: #1e7e34;
+}
+
+button#translate-btn:active {
+    background-color: #155724;
+}
+
+/* Flexbox for aligning items within input/output sections if needed,
+   but current block layout with 100% width for controls is often sufficient.
+   Example if needed:
+.input-section div, .output-section div {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.input-section div label, .output-section div label {
+    flex-basis: 120px; // Adjust as needed
+    margin-bottom: 0;
+}
+.input-section div select, .input-section div textarea,
+.output-section div select, .output-section div textarea {
+    flex-grow: 1;
+}
+*/
