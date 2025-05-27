@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Billiards Game Logic Tests</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { margin-bottom: 5px; padding: 5px; border-radius: 3px; }
+        .pass { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .fail { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        pre { background-color: #f0f0f0; padding: 10px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>Billiards Game Logic Tests</h1>
+    <div id="testResults"></div>
+
+    <!-- Game logic will be included here -->
+    <script src="gameLogic.js"></script>
+
+    <!-- Test script will follow -->
+    <script>
+        // Test assertions and actual tests will go here
+        const testResultsDiv = document.getElementById('testResults');
+
+        function assertEqual(actual, expected, message) {
+            const actualStr = JSON.stringify(actual);
+            const expectedStr = JSON.stringify(expected);
+            if (actualStr === expectedStr) { // Simple string comparison for complex objects after stringify
+                testResultsDiv.innerHTML += `<div class="test-result pass">PASS: ${message}</div>`;
+            } else {
+                testResultsDiv.innerHTML += `<div class="test-result fail">FAIL: ${message}<br>Expected: ${expectedStr}<br>Actual: ${actualStr}</div>`;
+            }
+        }
+
+        function assertVector3Equal(actual, expected, tolerance, message) {
+            if (!(actual instanceof THREE.Vector3) || !(expected instanceof THREE.Vector3)) {
+                 testResultsDiv.innerHTML += `<div class="test-result fail">FAIL: ${message}<br>Invalid input: Not THREE.Vector3 objects.</div>`;
+                 return;
+            }
+            const distance = actual.distanceTo(expected);
+            if (distance < tolerance) {
+                testResultsDiv.innerHTML += `<div class="test-result pass">PASS: ${message} (distance: ${distance.toFixed(5)})</div>`;
+            } else {
+                testResultsDiv.innerHTML += `<div class="test-result fail">FAIL: ${message}<br>Expected: (${expected.x.toFixed(3)}, ${expected.y.toFixed(3)}, ${expected.z.toFixed(3)})<br>Actual: (${actual.x.toFixed(3)}, ${actual.y.toFixed(3)}, ${actual.z.toFixed(3)})<br>Distance: ${distance.toFixed(5)}</div>`;
+            }
+        }
+
+        // Placeholder for tests
+        console.log("Test script loaded. gameLogic.js should be loaded before this.");
+
+        // --- Test Data Setup ---
+        const BALL_R = 0.15; // Should match game's BALL_RADIUS for collision overlap logic
+        const RESTITUTION_COEFF = 0.8; // Should match game's RESTITUTION
+
+        function createMockBall(id, color, position, velocity, mass = 1) {
+            return {
+                id: id, // For easier identification in tests
+                userData: {
+                    colorName: color,
+                    velocity: velocity instanceof THREE.Vector3 ? velocity : new THREE.Vector3(velocity.x, velocity.y, velocity.z),
+                    mass: mass
+                },
+                position: position instanceof THREE.Vector3 ? position : new THREE.Vector3(position.x, position.y, position.z),
+                // Mock other properties if resolveBallCollision or computeScoreForShot needs them
+            };
+        }
+
+        // --- Collision Tests ---
+        function runCollisionTests() {
+            testResultsDiv.innerHTML += '<h2>Collision Tests</h2>';
+
+            // Scenario 1: Head-on collision, equal mass, opposite velocities
+            let ballA1 = createMockBall('A1', 'white', {x:0, y:0, z:0}, {x:1, y:0, z:0});
+            let ballB1 = createMockBall('B1', 'red', {x: BALL_R * 1.9, y:0, z:0}, {x:-1, y:0, z:0}); // Positioned for collision
+            resolveBallCollision(ballA1, ballB1, RESTITUTION_COEFF, BALL_R);
+            // Expected: Velocities should essentially reverse (scaled by restitution if it were < 1 and applied differently,
+            // but current formula with equal mass should swap them if restitution is 1, or reverse if they hit and bounce)
+            // With the current formula: v1_new_scalar = (v1n * (m1 - R*m2) + (1+R)*m2*v2n) / (m1+m2)
+            // If m1=m2=1: v1_new = (v1n * (1-R) + (1+R)*v2n) / 2
+            // v1n=1, v2n=-1. R=0.8. v1_new = (1*(0.2) + (1.8)*-1)/2 = (0.2 - 1.8)/2 = -1.6/2 = -0.8
+            // v2_new = (v2n * (1-R) + (1+R)*v1n) / 2 = (-1*(0.2) + (1.8)*1)/2 = (-0.2 + 1.8)/2 = 1.6/2 = 0.8
+            assertVector3Equal(ballA1.userData.velocity, new THREE.Vector3(-0.8, 0, 0), 0.001, "Head-on Collision (Ball A1 velocity)");
+            assertVector3Equal(ballB1.userData.velocity, new THREE.Vector3(0.8, 0, 0), 0.001, "Head-on Collision (Ball B1 velocity)");
+
+            // Scenario 2: Stationary ball hit, equal mass
+            let ballA2 = createMockBall('A2', 'white', {x:0, y:0, z:0}, {x:1, y:0, z:0});
+            let ballB2 = createMockBall('B2', 'yellow', {x:BALL_R * 1.9, y:0, z:0}, {x:0, y:0, z:0});
+            resolveBallCollision(ballA2, ballB2, RESTITUTION_COEFF, BALL_R);
+            // v1n=1, v2n=0. R=0.8. v1_new = (1*(0.2) + 0)/2 = 0.1
+            // v2_new = (0 + (1.8)*1)/2 = 0.9
+            assertVector3Equal(ballA2.userData.velocity, new THREE.Vector3(0.1, 0, 0), 0.001, "Stationary Hit (Ball A2 velocity)");
+            assertVector3Equal(ballB2.userData.velocity, new THREE.Vector3(0.9, 0, 0), 0.001, "Stationary Hit (Ball B2 velocity)");
+            
+            // Scenario 3: Glancing collision (more complex to predict exact values without deeper math)
+            // For simplicity, we'll test a 90-degree hit. Ball A hits stationary Ball B from the side.
+            // Ball A moves along Z, Ball B is offset along X. Normal will be mostly along X.
+            let ballA3 = createMockBall('A3', 'white', {x:0, y:0, z:0}, {x:0, y:0, z:1}); // Moving along Z
+            let ballB3 = createMockBall('B3', 'red1', {x:BALL_R, y:0, z:BALL_R * 0.5}, {x:0, y:0, z:0}); // Offset for glancing
+            // Expected normal approx (1,0,0) if perfectly side hit.
+            // Actual normal will depend on exact positions.
+            // This test is more of a "does it change reasonably" than "exact values"
+            // resolveBallCollision will calculate the normal based on positions.
+            // For test simplicity, let's make the collision normal purely along X by aligning centers along X at contact.
+            ballA3.position.set(0,0,0); ballA3.userData.velocity.set(1,0,0); // Moves along X
+            ballB3.position.set(BALL_R*1.9, 0, 0); ballB3.userData.velocity.set(0,0,0); // Stationary, directly in path
+            // This is now identical to Scenario 2, just different axis.
+            resolveBallCollision(ballA3, ballB3, RESTITUTION_COEFF, BALL_R);
+            assertVector3Equal(ballA3.userData.velocity, new THREE.Vector3(0.1, 0, 0), 0.001, "Direct Hit X-axis (Ball A3 velocity)");
+            assertVector3Equal(ballB3.userData.velocity, new THREE.Vector3(0.9, 0, 0), 0.001, "Direct Hit X-axis (Ball B3 velocity)");
+
+            // True Glancing: Ball A (1,0,0) vel. Ball B stationary at (BALL_R, BALL_R, 0). Normal should be roughly (1,1,0) normalized.
+            let ballA4 = createMockBall('A4', 'white', {x:0, y:0, z:0}, {x:1, y:0, z:0});
+            let ballB4 = createMockBall('B4', 'red2', {x:BALL_R, y:BALL_R, z:0}, {x:0, y:0, z:0}); // collision point (BALL_R, BALL_R*0.5, 0)
+            // Position A4 so it collides with B4. Let A4 be at ( -BALL_R*cos(45), BALL_R*sin(45) - BALL_R, 0 )
+            // For simplicity of test setup, let's set up the collision point for a clear normal.
+            // Let ballA4 be at (0,0,0) moving (1,0,0). BallB4 at (BALL_R, BALL_R, 0)
+            // To make them collide: ballA4 at (BALL_R - 2*BALL_R*cos(angle), BALL_R - 2*BALL_R*sin(angle))
+            // This is getting too complex for simple manual calculation.
+            // Let's test a simpler glancing scenario: Ball A moves along X, hits Ball B which is slightly offset in Y.
+            ballA4 = createMockBall('A4', 'white', {x:0, y:0, z:0}, {x:1, y:0, z:0});
+            ballB4 = createMockBall('B4', 'red2', {x:BALL_R*1.5, y:BALL_R*0.5, z:0}, {x:0, y:0, z:0}); // Offset in Y
+            // The normal will have X and Y components.
+            // We expect A4 to lose some X velocity and gain some Y velocity. B4 to gain X and Y velocity.
+            const initialVelA4 = ballA4.userData.velocity.clone();
+            resolveBallCollision(ballA4, ballB4, RESTITUTION_COEFF, BALL_R);
+            testResultsDiv.innerHTML += `<div class="test-result pass">Glancing collision (A4): Initial Vel: (${initialVelA4.x.toFixed(3)}, ${initialVelA4.y.toFixed(3)}), Final Vel: (${ballA4.userData.velocity.x.toFixed(3)}, ${ballA4.userData.velocity.y.toFixed(3)}) - Check if changed reasonably.</div>`;
+            testResultsDiv.innerHTML += `<div class="test-result pass">Glancing collision (B4): Initial Vel: (0,0), Final Vel: (${ballB4.userData.velocity.x.toFixed(3)}, ${ballB4.userData.velocity.y.toFixed(3)}) - Check if changed reasonably.</div>`;
+            // Basic check: X velocity of A4 should decrease, Y should change. B4 should gain velocity.
+            assertEqual(ballA4.userData.velocity.x < initialVelA4.x, true, "Glancing (A4) X velocity decreased");
+            assertEqual(ballB4.userData.velocity.length() > 0, true, "Glancing (B4) gained velocity");
+
+        }
+
+        // --- Scoring Tests ---
+        function runScoringTests() {
+            testResultsDiv.innerHTML += '<h2>Scoring Tests</h2>';
+            const cueBall = createMockBall('cue', 'white', {x:0,y:0,z:0}, {x:0,y:0,z:0});
+            const objectBalls = [
+                createMockBall('obj1', 'yellow', {x:1,y:0,z:0}, {x:0,y:0,z:0}),
+                createMockBall('obj2', 'red1', {x:2,y:0,z:0}, {x:0,y:0,z:0}),
+                createMockBall('obj3', 'red2', {x:3,y:0,z:0}, {x:0,y:0,z:0}),
+                createMockBall('obj4', 'black', {x:4,y:0,z:0}, {x:0,y:0,z:0}) // Not a valid object ball for scoring
+            ];
+            const validObjectBallColors = ['yellow', 'red1', 'red2'];
+
+            // Scenario 1: Cue hits two object balls (yellow, red1)
+            let hits1 = new Set([objectBalls[0], objectBalls[1]]);
+            let score1 = computeScoreForShot(hits1, cueBall, validObjectBallColors);
+            assertEqual(score1, 1, "Score Test 1: Cue hits Yellow & Red1 (should be 1 point)");
+
+            // Scenario 2: Cue hits one red ball
+            let hits2 = new Set([objectBalls[1]]);
+            let score2 = computeScoreForShot(hits2, cueBall, validObjectBallColors);
+            assertEqual(score2, 0, "Score Test 2: Cue hits Red1 only (should be 0 points)");
+
+            // Scenario 3: Cue hits no object balls (e.g., hits a non-scoring ball)
+            let hits3 = new Set([objectBalls[3]]);
+            let score3 = computeScoreForShot(hits3, cueBall, validObjectBallColors);
+            assertEqual(score3, 0, "Score Test 3: Cue hits Black ball only (should be 0 points)");
+
+            // Scenario 4: Cue hits three object balls (yellow, red1, red2)
+            let hits4 = new Set([objectBalls[0], objectBalls[1], objectBalls[2]]);
+            let score4 = computeScoreForShot(hits4, cueBall, validObjectBallColors);
+            assertEqual(score4, 1, "Score Test 4: Cue hits Yellow, Red1 & Red2 (should be 1 point)");
+            
+            // Scenario 5: Empty hit set
+            let hits5 = new Set();
+            let score5 = computeScoreForShot(hits5, cueBall, validObjectBallColors);
+            assertEqual(score5, 0, "Score Test 5: Cue hits no balls (should be 0 points)");
+
+            // Scenario 6: Cue hits one object ball and one non-object ball
+            let hits6 = new Set([objectBalls[0], objectBalls[3]]);
+            let score6 = computeScoreForShot(hits6, cueBall, validObjectBallColors);
+            assertEqual(score6, 0, "Score Test 6: Cue hits Yellow & Black (should be 0 points, as only 1 object ball)");
+        }
+
+        // --- Run All Tests ---
+        function runTests() {
+            if (typeof resolveBallCollision !== 'function' || typeof computeScoreForShot !== 'function') {
+                testResultsDiv.innerHTML += '<div class="test-result fail">FAIL: gameLogic.js functions not loaded. Ensure gameLogic.js is included and functions are global.</div>';
+                return;
+            }
+            testResultsDiv.innerHTML = ''; // Clear previous results
+            runCollisionTests();
+            runScoringTests();
+        }
+
+        // Run tests when the page loads
+        window.onload = runTests;
+
+    </script>
+</body>
+</html>
